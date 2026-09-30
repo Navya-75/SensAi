@@ -33,7 +33,3 @@ npm run db:deploy
 - Job matching uses an explainable profile score. Seeded listings are fictional and labeled as demos; live job data requires a configured provider.
 - Voice practice uses browser speech recognition when available. The browser or its configured speech service may process microphone input; SENSAI stores submitted text transcripts, not microphone audio.
 - See [DATABASE.md](DATABASE.md), [AI.md](AI.md), [SECURITY.md](SECURITY.md), and [DEPLOYMENT.md](DEPLOYMENT.md) for operational details.
-
-## Phase status
-
-Phases 1–17 are implemented in the workspace. Production readiness still depends on configuring Clerk, PostgreSQL, Gemini, and private file storage, then applying migrations and completing live provider checks in the deployment environment.
