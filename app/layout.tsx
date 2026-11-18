@@ -28,16 +28,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body className="pastel-theme">
+      <body className="linkedin-theme">
         <ClerkProvider
           appearance={{
             variables: {
-              colorPrimary: "#8d6445",
-              colorBackground: "#fbf8f2",
-              colorText: "#3c2f25",
-              colorTextSecondary: "#695743",
-              colorInputBackground: "#f1e8da",
-              colorInputText: "#3c2f25",
+              colorPrimary: "#0a66c2",
+              colorBackground: "#ffffff",
+              colorText: "#191919",
+              colorTextSecondary: "#56616b",
+              colorInputBackground: "#f3f2ef",
+              colorInputText: "#191919",
               borderRadius: "0.8rem",
             },
           }}

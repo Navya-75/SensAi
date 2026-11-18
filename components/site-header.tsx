@@ -8,9 +8,9 @@ import { BrandMark } from "@/components/ui/brand-mark";
 import { ButtonLink } from "@/components/ui/button";
 
 const links = [
-  { href: "#platform", label: "Platform" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#about", label: "About" },
+  { href: "#career-tools", label: "Career tools" },
+  { href: "/jobs", label: "Job matches" },
+  { href: "#getting-started", label: "How to start" },
 ];
 
 export function SiteHeader() {

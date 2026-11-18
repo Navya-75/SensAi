@@ -69,11 +69,17 @@ export async function uploadResumeForUser({
   } catch (error) {
     console.error("Private resume storage write failed", {
       provider: storage.name,
+      bucketConfigured: Boolean(process.env.S3_BUCKET),
+      regionConfigured: Boolean(process.env.S3_REGION),
+      endpointConfigured: Boolean(process.env.S3_ENDPOINT),
+      accessKeyConfigured: Boolean(process.env.S3_ACCESS_KEY_ID),
+      secretKeyConfigured: Boolean(process.env.S3_SECRET_ACCESS_KEY),
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
       errorName: error instanceof Error ? error.name : "UnknownError",
       errorCode: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
       errorMessage: error instanceof Error ? error.message.replace(/[A-Za-z]:\\[^:\r\n]*/g, "[path]").slice(0, 180) : undefined,
     });
-    throw new ResumeUploadError("Private resume storage is unavailable. Check its configuration and try again.", 503);
+    throw new ResumeUploadError("Private resume storage is unavailable. The site owner should check the R2 settings in Render and review the service logs.", 503);
   }
 
   try {

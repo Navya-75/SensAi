@@ -20,6 +20,19 @@
 
 Do not run `npm run db:seed` against production unless demo content is intentionally wanted. Seeded job entries are fictional examples.
 
+### Cloudflare R2 on Render (no AWS account required)
+
+R2 uses the same S3-compatible API as the existing storage adapter. In the Render web service's Environment settings, configure:
+
+- `STORAGE_PROVIDER=s3`
+- `S3_BUCKET` to the exact R2 bucket name
+- `S3_REGION=auto`
+- `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`
+- `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` from an R2 token scoped to that bucket with Object Read & Write access
+- `S3_FORCE_PATH_STYLE=false`
+
+Keep the bucket private. After changing these values, use Render's **Save and deploy** option. If a write fails, Render logs include `Private resume storage write failed` and safe presence flags for the required settings; they never include the secret key value.
+
 ## Voice support
 
 Voice interviews rely on the browser's Web Speech Recognition API. It is not supported consistently across browsers, and a browser may use a remote speech service. Users can switch to text interviews when voice recognition is unavailable or denied.
