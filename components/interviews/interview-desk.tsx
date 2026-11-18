@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, LoaderCircle, Sparkles } from "lucide-react";
+import { ArrowRight, Check, LoaderCircle, Mic, MicOff, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { BrowserSpeechRecognitionAdapter } from "@/lib/voice/provider";
+
+type SpeechWindow = Window & { SpeechRecognition?: new () => BrowserSpeechRecognitionAdapter; webkitSpeechRecognition?: new () => BrowserSpeechRecognitionAdapter };
+type SpeechResultEvent = Event & { resultIndex: number; results: { length: number; [index: number]: { isFinal: boolean; 0: { transcript: string } } } };
 
 type Feedback = {
   relevance: number | null;
@@ -44,12 +48,73 @@ export function InterviewDesk({
   const [interview, setInterview] = useState<Interview | null>(initialInterview);
   const [textSizeIndex, setTextSizeIndex] = useState(1);
   const [answerText, setAnswerText] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [speechInterim, setSpeechInterim] = useState("");
   const [finalReport, setFinalReport] = useState<FinalReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const recognizer = useRef<BrowserSpeechRecognitionAdapter | null>(null);
   const question = interview?.questions.find((item) => !item.answer) ?? null;
   const latestFeedback = interview?.questions.filter((item) => item.evaluation).at(-1)?.evaluation ?? null;
   const interviewFontSize = interviewFontSizes[textSizeIndex];
+  const difficultyLabel = interview?.difficulty === "BEGINNER" ? "Beginner" : interview?.difficulty === "ADVANCED" ? "Hard" : "Moderate";
+
+  useEffect(() => {
+    const browserWindow = window as SpeechWindow;
+    setSpeechSupported(Boolean(browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition));
+    return () => recognizer.current?.stop();
+  }, []);
+
+  function toggleRecording() {
+    if (recording) {
+      recognizer.current?.stop();
+      setRecording(false);
+      return;
+    }
+    const browserWindow = window as SpeechWindow;
+    const SpeechRecognition = browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Speech recognition is not available in this browser. You can still type your answer.");
+      return;
+    }
+    try {
+      setError(null);
+      setSpeechInterim("");
+      const instance = new SpeechRecognition();
+      instance.continuous = true;
+      instance.interimResults = true;
+      instance.lang = navigator.language || "en-US";
+      instance.onresult = (rawEvent) => {
+        const event = rawEvent as SpeechResultEvent;
+        let finalText = "";
+        let interimText = "";
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const item = event.results[index];
+          if (item.isFinal) finalText += item[0].transcript;
+          else interimText += item[0].transcript;
+        }
+        if (finalText) setAnswerText((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}${finalText}`.trimStart());
+        setSpeechInterim(interimText);
+      };
+      instance.onerror = () => {
+        setError("The microphone could not transcribe that answer. Check microphone permission or type your answer instead.");
+        setRecording(false);
+        setSpeechInterim("");
+      };
+      instance.onend = () => {
+        setRecording(false);
+        setSpeechInterim("");
+      };
+      recognizer.current = instance;
+      setRecording(true);
+      instance.start();
+    } catch {
+      setRecording(false);
+      setSpeechInterim("");
+      setError("The microphone could not start. Check browser permission and try again.");
+    }
+  }
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(null); setFinalReport(null);
@@ -83,7 +148,7 @@ export function InterviewDesk({
     <form onSubmit={start} className="grid gap-4 md:grid-cols-2">
       <label className="md:col-span-2 text-[10px] text-[#9ba8bb]">Target role<input value={role} onChange={(event) => setRole(event.target.value)} required minLength={2} maxLength={120} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white outline-none" /></label>
       <label className="text-[10px] text-[#9ba8bb]">Interview type<select value={type} onChange={(event) => setType(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white">{[["TECHNICAL", "Technical"], ["HR", "HR"], ["BEHAVIORAL", "Behavioral"], ["MIXED", "Mixed"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label className="text-[10px] text-[#9ba8bb]">Difficulty<select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white">{[["BEGINNER", "Beginner"], ["INTERMEDIATE", "Intermediate"], ["ADVANCED", "Advanced"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label className="text-[10px] text-[#9ba8bb]">Difficulty<select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white">{[["BEGINNER", "Beginner"], ["INTERMEDIATE", "Moderate"], ["ADVANCED", "Hard"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label className="text-[10px] text-[#9ba8bb]">Experience level<select value={experienceLevel} onChange={(event) => setExperienceLevel(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white">{[["EXPLORING", "Exploring"], ["STUDENT", "Student"], ["ENTRY_LEVEL", "Entry level"], ["EARLY_CAREER", "Early career"], ["MID_CAREER", "Mid career"], ["SENIOR", "Senior"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label className="text-[10px] text-[#9ba8bb]">Questions<select value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} className="mt-1.5 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-xs text-white">{[3, 5, 7, 10].map((count) => <option key={count} value={count}>{count}</option>)}</select></label>
       <div className="md:col-span-2"><Button type="submit" disabled={busy || !aiAvailable || role.trim().length < 2} className="min-h-10 px-4 text-xs">{busy ? <><LoaderCircle size={14} className="animate-spin" /> Preparing questions…</> : <><Sparkles size={14} /> Start interview</>}</Button>{!aiAvailable && <p className="mt-2 text-[9px] text-[#d7c798]">Add GEMINI_API_KEY to enable interviews.</p>}</div>
@@ -95,7 +160,7 @@ export function InterviewDesk({
   return <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
     <section className="rounded-2xl border border-white/[0.08] bg-[#111621] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#73e8dc]">{interview.type} · {interview.difficulty}</p><h2 className="mt-1.5 text-base font-semibold">{interview.targetRole}</h2></div>
+        <div><p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#73e8dc]">{interview.type} · {difficultyLabel}</p><h2 className="mt-1.5 text-base font-semibold">{interview.targetRole}</h2></div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-white/[0.08] px-3 py-1.5 text-[9px] text-[#9aa7ba]">Question {Math.min(answeredCount + 1, interview.questions.length)} of {interview.questions.length}</span>
           <div role="group" aria-label="Interview text size" className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.025] px-1.5 py-1">
@@ -107,7 +172,7 @@ export function InterviewDesk({
         </div>
       </div>
       {error && <p role="alert" className="mt-4 rounded-lg border border-rose-200/15 bg-rose-200/[0.04] px-3 py-2.5 text-[10px] text-[#e4a5ae]">{error}</p>}
-      {question ? <><article className="mt-6 rounded-xl border border-white/[0.07] bg-[#0b0e17] p-4 sm:p-5"><p className="text-[9px] uppercase tracking-[0.12em] text-[#748197]">Question {question.position}{question.category ? ` · ${question.category}` : ""}</p><h3 style={{ fontSize: `${interviewFontSize}px`, lineHeight: 1.55 }} className="mt-3 text-sm text-[#e5ebf4]">{question.prompt}</h3></article><form onSubmit={submitAnswer} className="mt-4"><label htmlFor="interview-answer" className="text-[10px] text-[#9ba8bb]">Your answer<textarea id="interview-answer" required minLength={10} maxLength={8000} value={answerText} onChange={(event) => setAnswerText(event.target.value)} rows={9} placeholder="Answer in your own words. Use a real example when relevant." style={{ fontSize: `${interviewFontSize}px`, lineHeight: 1.6 }} className="mt-2 w-full resize-y rounded-xl border border-white/[0.08] bg-[#0b0e17] p-3.5 leading-6 text-white outline-none focus:border-[#63e4d9]/40" /></label><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-[9px] text-[#718097]">Your answer is saved with this private interview session.</span><Button type="submit" disabled={busy || answerText.trim().length < 10} className="min-h-10 px-4 text-xs">{busy ? <><LoaderCircle size={14} className="animate-spin" /> Evaluating…</> : <>Submit answer <ArrowRight size={13} /></>}</Button></div></form></> : <div className="rounded-xl border border-[#63e4d9]/15 bg-[#4bdccd]/[0.03] p-5"><Check size={17} className="text-[#73e8dc]" /><h3 className="mt-3 text-sm font-semibold">All questions answered</h3><p className="mt-1 text-[10px] text-[#8996aa]">Your final report is saved in interview history.</p><div className="mt-3 flex gap-4"><Link href="/interview/history" className="text-[10px] text-[#73e8dc]">Open history →</Link><button type="button" onClick={() => { setInterview(null); setFinalReport(null); }} className="text-[10px] text-[#9ba8bb]">Start another</button></div></div>}
+      {question ? <><article className="mt-6 rounded-xl border border-white/[0.07] bg-[#0b0e17] p-4 sm:p-5"><p className="text-[9px] uppercase tracking-[0.12em] text-[#748197]">Question {question.position}{question.category ? ` · ${question.category}` : ""}</p><h3 style={{ fontSize: `${interviewFontSize}px`, lineHeight: 1.55 }} className="mt-3 text-sm text-[#e5ebf4]">{question.prompt}</h3></article><form onSubmit={submitAnswer} className="mt-4"><label htmlFor="interview-answer" className="text-sm font-medium text-[#9ba8bb]">Your answer<textarea id="interview-answer" required minLength={10} maxLength={8000} value={answerText} onChange={(event) => { setAnswerText(event.target.value); setSpeechInterim(""); }} rows={9} placeholder="Type your answer or use the microphone to dictate it." style={{ fontSize: `${interviewFontSize}px`, lineHeight: 1.6 }} className="mt-2 w-full resize-y rounded-xl border border-white/[0.08] bg-[#0b0e17] p-3.5 leading-6 text-white outline-none focus:border-[#63e4d9]/40" /></label><div className="mt-3 flex flex-wrap items-center gap-3"><Button type="button" variant={recording ? "secondary" : "primary"} disabled={busy || !speechSupported} onClick={toggleRecording} className="min-h-10 px-4 text-xs">{recording ? <><MicOff size={15} /> Stop microphone</> : <><Mic size={15} /> Answer with microphone</>}</Button><span role="status" className="text-xs text-[#8290a5]">{recording ? "Listening… your speech is being transcribed." : speechSupported ? "You can edit the transcript before submitting." : "Microphone transcription is unavailable here; typing still works."}</span></div>{speechInterim && <p aria-live="polite" className="mt-2 text-xs text-[#8290a5]">Transcribing: {speechInterim}</p>}<div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#718097]">Your transcript is evaluated and saved with this interview session.</span><Button type="submit" disabled={busy || recording || answerText.trim().length < 10} className="min-h-10 px-4 text-xs">{busy ? <><LoaderCircle size={14} className="animate-spin" /> Evaluating…</> : <>Submit answer <ArrowRight size={13} /></>}</Button></div></form></> : <div className="rounded-xl border border-[#63e4d9]/15 bg-[#4bdccd]/[0.03] p-5"><Check size={17} className="text-[#73e8dc]" /><h3 className="mt-3 text-sm font-semibold">All questions answered</h3><p className="mt-1 text-[10px] text-[#8996aa]">Your final report is saved in interview history.</p><div className="mt-3 flex gap-4"><Link href="/interview/history" className="text-[10px] text-[#73e8dc]">Open history →</Link><button type="button" onClick={() => { setInterview(null); setFinalReport(null); }} className="text-[10px] text-[#9ba8bb]">Start another</button></div></div>}
       {finalReport && <section className="mt-6 rounded-xl border border-[#63e4d9]/15 bg-[#4bdccd]/[0.035] p-4"><h3 className="text-xs font-semibold">Final report</h3><p className="mt-2 text-[11px] leading-5 text-[#aeb9c9]">{finalReport.summary}</p><div className="mt-4 grid gap-3 sm:grid-cols-3">{[["Strengths", finalReport.strengths], ["Areas to improve", finalReport.weaknesses], ["Preparation", finalReport.preparationSuggestions]].map(([title, items]) => <div key={title as string}><h4 className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#8d9aaf]">{title as string}</h4><ul className="mt-2 space-y-1.5 text-[10px] leading-5 text-[#aab5c6]">{(items as string[]).map((item) => <li key={item}>· {item}</li>)}</ul></div>)}</div></section>}
       {latestFeedback && <section className="mt-5 rounded-xl border border-white/[0.07] p-4"><h3 className="text-xs font-semibold">Last answer feedback</h3><p className="mt-2 text-[10px] leading-5 text-[#aab5c6]">{latestFeedback.summary}</p><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">{[["Relevance", latestFeedback.relevance], ["Correctness", latestFeedback.technicalCorrectness], ["Clarity", latestFeedback.clarity], ["Structure", latestFeedback.structure], ["Completeness", latestFeedback.completeness]].map(([label, score]) => <div key={label as string} className="rounded-lg bg-white/[0.025] p-2 text-center"><p className="text-sm font-semibold text-[#75e5db]">{score ?? "—"}/5</p><p className="mt-1 text-[8px] text-[#8190a5]">{label as string}</p></div>)}</div></section>}
     </section>

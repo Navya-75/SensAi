@@ -4,7 +4,7 @@ import { ResumeBuilder } from "@/components/resume-builder/resume-builder";
 import { getSignedInProfile } from "@/lib/auth/user";
 import { syncSignedInUser } from "@/lib/auth/sync-user";
 import { prisma } from "@/lib/db/prisma";
-import { emptyResumeSections, resumeSectionsSchema, type ResumeBuilderData } from "@/lib/validation/resume-builder";
+import { emptyResumeSections, resumeSectionsSchema, resumeTemplateKeys, type ResumeBuilderData, type ResumeTemplateKey } from "@/lib/validation/resume-builder";
 import { resumeAnalysisSchema } from "@/lib/ai/schemas/resume-analysis";
 
 function entry(id: string, title: string, subtitle = "", details = "") {
@@ -26,7 +26,8 @@ export default async function ResumeBuilderPage() {
       ]);
       if (saved) {
         const sections = resumeSectionsSchema.safeParse(saved.sections);
-        if (sections.success && (saved.templateKey === "ats" || saved.templateKey === "modern")) initial = { title: saved.title, templateKey: saved.templateKey, sections: sections.data };
+        const templateKey = resumeTemplateKeys.find((key) => key === saved.templateKey);
+        if (sections.success && templateKey) initial = { title: saved.title, templateKey: templateKey as ResumeTemplateKey, sections: sections.data };
       } else if (user) {
         const analysis = latest ? resumeAnalysisSchema.safeParse(latest.result) : null;
         const source = analysis?.success ? analysis.data : null;

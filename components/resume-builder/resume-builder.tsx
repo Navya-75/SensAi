@@ -4,9 +4,27 @@ import { useState, type FormEvent } from "react";
 import { LoaderCircle, Printer, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntryEditor, type EntrySectionKey, type ResumeEntry } from "@/components/resume-builder/entry-editor";
-import { type ResumeBuilderData, type ResumeSections } from "@/lib/validation/resume-builder";
+import { type ResumeBuilderData, type ResumeSections, type ResumeTemplateKey } from "@/lib/validation/resume-builder";
 
 type Suggestion = { summarySuggestion: string; notes: string[] };
+
+const resumeTemplates: { key: ResumeTemplateKey; name: string; description: string; sample: string }[] = [
+  { key: "ats", name: "ATS friendly", description: "Simple and easy to scan", sample: "bg-slate-800" },
+  { key: "modern", name: "Modern", description: "Clean teal accent", sample: "bg-teal-600" },
+  { key: "minimal", name: "Minimal", description: "Open, understated layout", sample: "bg-stone-500" },
+  { key: "classic", name: "Classic", description: "Traditional centered header", sample: "bg-indigo-900" },
+  { key: "executive", name: "Executive", description: "Polished navy and gold", sample: "bg-amber-700" },
+  { key: "creative", name: "Creative", description: "Blue sidebar accent", sample: "bg-blue-600" },
+];
+
+const previewStyles: Record<ResumeTemplateKey, { page: string; header: string; headerContent: string; name: string; contact: string; section: string }> = {
+  ats: { page: "bg-white text-[#202938]", header: "border-b border-[#d8dde5]", headerContent: "", name: "text-[#202938]", contact: "text-[#515d6e]", section: "border-b border-[#e2e5ea] text-[#202938]" },
+  modern: { page: "border-t-4 border-t-[#2da99e] bg-white text-[#202938]", header: "border-b border-[#c9e7e4]", headerContent: "", name: "text-[#146b64]", contact: "text-[#515d6e]", section: "border-b border-[#c9e7e4] text-[#146b64]" },
+  minimal: { page: "bg-[#fffefa] text-[#292929]", header: "border-b border-[#eeeeea]", headerContent: "", name: "text-[#292929]", contact: "text-[#66645f]", section: "border-b border-[#eeeeea] text-[#55534e]" },
+  classic: { page: "font-serif bg-white text-[#263247]", header: "border-b-2 border-[#263247] text-center", headerContent: "", name: "text-[#263247]", contact: "text-[#566176]", section: "border-b border-[#cfd4dc] text-[#263247]" },
+  executive: { page: "bg-[#fffdf7] text-[#272c36]", header: "border-b-2 border-[#9a7735]", headerContent: "", name: "text-[#202d43]", contact: "text-[#5d5c57]", section: "border-b border-[#d9c89f] text-[#71561d]" },
+  creative: { page: "border-l-8 border-l-[#0a66c2] bg-[#f7fbff] text-[#202938]", header: "rounded-lg bg-[#eaf3fc] p-4", headerContent: "", name: "text-[#0a477f]", contact: "text-[#445b70]", section: "border-b border-[#c8dced] text-[#0a66c2]" },
+};
 
 export function ResumeBuilder({ available, aiAvailable, initialData }: { available: boolean; aiAvailable: boolean; initialData: ResumeBuilderData }) {
   const [data, setData] = useState(initialData);
@@ -59,6 +77,7 @@ export function ResumeBuilder({ available, aiAvailable, initialData }: { availab
   }
 
   const sections = data.sections;
+  const selectedTemplate = previewStyles[data.templateKey];
   const entries = (key: EntrySectionKey) => sections[key] as ResumeEntry[];
   const printableEntrySections: [string, ResumeEntry[]][] = [
     ["Experience", sections.experience], ["Projects", sections.projects], ["Education", sections.education],
@@ -68,7 +87,8 @@ export function ResumeBuilder({ available, aiAvailable, initialData }: { availab
 
   return <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)] print:block">
     <section className="space-y-4 print:hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#111621] p-4"><label className="min-w-[180px] flex-1 text-[9px] text-[#8d9aaf]">Resume title<input value={data.title} onChange={(event) => setData((current) => ({ ...current, title: event.target.value }))} maxLength={120} className="mt-1 h-9 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-2.5 text-xs text-white outline-none" /></label><label className="text-[9px] text-[#8d9aaf]">Template<select value={data.templateKey} onChange={(event) => setData((current) => ({ ...current, templateKey: event.target.value as "ats" | "modern" }))} className="mt-1 block h-9 rounded-lg border border-white/[0.08] bg-[#0b0e17] px-2 text-[10px] text-white"><option value="ats">ATS friendly</option><option value="modern">Clean modern</option></select></label><Button type="button" variant="secondary" disabled={!available || busy} onClick={() => void save()} className="min-h-9 px-3 text-[10px]">{busy ? <LoaderCircle size={13} className="animate-spin" /> : <Save size={13} />} Save</Button><Button type="button" disabled={!available} onClick={() => window.print()} className="min-h-9 px-3 text-[10px]"><Printer size={13} /> Save as PDF</Button></div>
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#111621] p-4"><label className="min-w-[180px] flex-1 text-xs text-[#8d9aaf]">Resume title<input value={data.title} onChange={(event) => setData((current) => ({ ...current, title: event.target.value }))} maxLength={120} className="mt-1 h-10 w-full rounded-lg border border-white/[0.08] bg-[#0b0e17] px-3 text-sm text-white outline-none" /></label><Button type="button" variant="secondary" disabled={!available || busy} onClick={() => void save()} className="min-h-10 px-4 text-xs">{busy ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />} Save</Button><Button type="button" disabled={!available} onClick={() => window.print()} className="min-h-10 px-4 text-xs"><Printer size={15} /> Save as PDF</Button></div>
+      <fieldset className="rounded-xl border border-white/[0.07] bg-[#111621] p-4"><legend className="px-1 text-sm font-semibold">Choose a template</legend><div className="grid gap-2 sm:grid-cols-2">{resumeTemplates.map((template) => <button key={template.key} type="button" aria-pressed={data.templateKey === template.key} onClick={() => setData((current) => ({ ...current, templateKey: template.key }))} className={`rounded-lg border p-3 text-left transition ${data.templateKey === template.key ? "border-[#0a66c2] bg-[#0a66c2]/[0.08]" : "border-white/[0.08] hover:border-white/[0.2]"}`}><span className="flex items-center gap-2"><span className={`h-3 w-3 rounded-full ${template.sample}`} /><span className="text-sm font-semibold">{template.name}</span></span><span className="mt-1 block text-xs text-[#929eb1]">{template.description}</span></button>)}</div></fieldset>
       {!available && <p className="rounded-xl border border-amber-200/15 bg-amber-100/[0.04] px-3 py-2.5 text-[10px] text-[#d7c798]">Connect PostgreSQL to save your resume builder document.</p>}
       {message && <p role="status" className="rounded-lg border border-[#5de1d5]/15 bg-[#4bdccd]/[0.04] px-3 py-2.5 text-[10px] text-[#9debe3]">{message}</p>}{error && <p role="alert" className="rounded-lg border border-rose-200/15 bg-rose-200/[0.04] px-3 py-2.5 text-[10px] text-[#e4a5ae]">{error}</p>}
 
@@ -81,10 +101,10 @@ export function ResumeBuilder({ available, aiAvailable, initialData }: { availab
       {(["experience", "projects", "education", "certifications", "achievements"] as EntrySectionKey[]).map((key) => <EntryEditor key={key} section={key} entries={entries(key)} onChange={(value) => update(key, value)} />)}
     </section>
 
-    <div className="min-w-0"><div className="mb-3 flex items-center justify-between print:hidden"><h2 className="text-xs font-semibold text-[#aab6c8]">Live preview</h2><span className="text-[9px] text-[#718097]">{data.templateKey === "ats" ? "ATS friendly" : "Clean modern"}</span></div><article className={`resume-print-preview min-h-[900px] rounded-xl border border-white/[0.1] bg-white p-7 text-[#202938] shadow-2xl sm:p-9 ${data.templateKey === "modern" ? "border-t-4 border-t-[#2da99e]" : ""}`}>
-      <header className="border-b border-[#d8dde5] pb-4"><h1 className="text-2xl font-bold tracking-tight">{sections.contact.fullName || "Your Name"}</h1><div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-[#515d6e]">{[sections.contact.email, sections.contact.phone, sections.contact.location, sections.contact.website, sections.contact.linkedin].filter(Boolean).map((item) => <span key={item}>{item}</span>)}</div></header>
-      {sections.summary && <section className="mt-5"><h2 className="text-[10px] font-bold uppercase tracking-[0.1em]">Summary</h2><p className="mt-1.5 whitespace-pre-line text-[10px] leading-5 text-[#394556]">{sections.summary}</p></section>}
-      {printableEntrySections.map(([title, items]) => { const visible = items.filter((item) => item.title || item.subtitle || item.details); return visible.length ? <section key={title} className="mt-5 break-inside-avoid"><h2 className="border-b border-[#e2e5ea] pb-1 text-[10px] font-bold uppercase tracking-[0.1em]">{title}</h2><div className="mt-2 space-y-3">{visible.map((item) => <div key={item.id} className="break-inside-avoid"><div className="flex flex-wrap justify-between gap-x-4"><h3 className="text-[10px] font-semibold">{item.title}</h3>{item.subtitle && <p className="text-[9px] text-[#657185]">{item.subtitle}</p>}</div>{item.details && <p className="mt-1 whitespace-pre-line text-[9px] leading-4 text-[#465366]">{item.details}</p>}</div>)}</div></section> : null; })}
+    <div className="min-w-0"><div className="mb-3 flex items-center justify-between print:hidden"><h2 className="text-sm font-semibold text-[#aab6c8]">Live preview</h2><span className="text-xs text-[#718097]">{resumeTemplates.find((template) => template.key === data.templateKey)?.name}</span></div><article className={`resume-print-preview min-h-[900px] rounded-xl border border-white/[0.1] p-7 shadow-2xl sm:p-9 ${selectedTemplate.page}`}>
+      <header className={`pb-4 ${selectedTemplate.header}`}><div className={selectedTemplate.headerContent}><h1 className={`text-2xl font-bold tracking-tight ${selectedTemplate.name}`}>{sections.contact.fullName || "Your Name"}</h1><div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] ${selectedTemplate.contact} ${data.templateKey === "classic" ? "justify-center" : ""}`}>{[sections.contact.email, sections.contact.phone, sections.contact.location, sections.contact.website, sections.contact.linkedin].filter(Boolean).map((item) => <span key={item}>{item}</span>)}</div></div></header>
+      {sections.summary && <section className="mt-5"><h2 className={`pb-1 text-[10px] font-bold uppercase tracking-[0.1em] ${selectedTemplate.section}`}>Summary</h2><p className="mt-1.5 whitespace-pre-line text-[10px] leading-5 text-[#394556]">{sections.summary}</p></section>}
+      {printableEntrySections.map(([title, items]) => { const visible = items.filter((item) => item.title || item.subtitle || item.details); return visible.length ? <section key={title} className="mt-5 break-inside-avoid"><h2 className={`pb-1 text-[10px] font-bold uppercase tracking-[0.1em] ${selectedTemplate.section}`}>{title}</h2><div className="mt-2 space-y-3">{visible.map((item) => <div key={item.id} className="break-inside-avoid"><div className="flex flex-wrap justify-between gap-x-4"><h3 className="text-[10px] font-semibold">{item.title}</h3>{item.subtitle && <p className="text-[9px] text-[#657185]">{item.subtitle}</p>}</div>{item.details && <p className="mt-1 whitespace-pre-line text-[9px] leading-4 text-[#465366]">{item.details}</p>}</div>)}</div></section> : null; })}
       {!sections.summary && printableEntrySections.every(([, items]) => items.every((item) => !item.title && !item.subtitle && !item.details)) && <p className="mt-8 text-xs text-[#798597]">Add resume details in the editor to preview them here.</p>}
     </article></div>
   </div>;

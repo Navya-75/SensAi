@@ -25,9 +25,12 @@ export const resumeSectionsSchema = z.object({
   achievements: z.array(entrySchema).max(30),
 }).strict();
 
+export const resumeTemplateKeys = ["ats", "modern", "minimal", "classic", "executive", "creative"] as const;
+export type ResumeTemplateKey = (typeof resumeTemplateKeys)[number];
+
 export const resumeBuilderSaveSchema = z.object({
   title: z.string().trim().min(1).max(120),
-  templateKey: z.enum(["ats", "modern"]),
+  templateKey: z.enum(resumeTemplateKeys),
   sections: resumeSectionsSchema,
 }).strict();
 

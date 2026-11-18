@@ -6,6 +6,23 @@ import { ArrowUpRight, Check, LoaderCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SkillGapResult } from "@/lib/ai/schemas/skill-gap";
 
+const skillGroupOrder = ["Frontend", "Backend", "Core", "Programming", "Tools & cloud", "Soft skills"] as const;
+
+function skillGroup(skill: { name: string; category: string }) {
+  const category = skill.category.toUpperCase();
+  const name = skill.name.toLowerCase();
+  const frontendNames = new Set(["react", "next.js", "angular", "vue", "svelte", "html", "css", "tailwind css"]);
+  const backendNames = new Set(["express", "express.js", "nestjs", "node.js", "django", "flask", "fastapi", "spring", ".net", "laravel", "rails"]);
+  if (category === "PROGRAMMING_LANGUAGE" || category === "PROGRAMMING") return "Programming";
+  if (category === "DATABASE" || backendNames.has(name)) return "Backend";
+  if (frontendNames.has(name)) return "Frontend";
+  if (category === "FRAMEWORK" || category === "FRONTEND") return "Frontend";
+  if (category === "BACKEND") return "Backend";
+  if (category === "CLOUD" || category === "TOOL") return "Tools & cloud";
+  if (category === "SOFT") return "Soft skills";
+  return "Core";
+}
+
 export function SkillGapExplorer({
   available,
   aiAvailable,
@@ -47,6 +64,7 @@ export function SkillGapExplorer({
   }
 
   const progress = result?.requiredSkills.length ? Math.round((result.matchedSkills.length / result.requiredSkills.length) * 100) : 0;
+  const groupedSkills = skillGroupOrder.map((group) => ({ group, skills: initialSkills.filter((skill) => skillGroup(skill) === group) })).filter(({ skills }) => skills.length > 0);
 
   return (
     <div className="space-y-5">
@@ -62,9 +80,9 @@ export function SkillGapExplorer({
 
       <div className="grid gap-5 lg:grid-cols-[.78fr_1.22fr]">
         <section className="h-fit rounded-2xl border border-white/[0.08] bg-[#111621] p-5">
-          <h2 className="text-xs font-semibold">Current skills</h2>
-          <p className="mt-1.5 text-[10px] leading-5 text-[#7f8ca1]">From your profile and analyzed resumes.</p>
-          {initialSkills.length ? <div className="mt-4 flex flex-wrap gap-2">{initialSkills.map((skill) => <span key={`${skill.category}-${skill.name}`} className="rounded-lg border border-white/[0.08] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-[#c0cad8]">{skill.name}</span>)}</div> : <p className="mt-4 rounded-xl border border-white/[0.06] p-3 text-[11px] leading-5 text-[#8794a9]">No skills saved yet. Add skills in your <Link href="/onboarding" className="text-[#72e5db] hover:text-white">career profile</Link> or analyze a resume.</p>}
+          <h2 className="text-sm font-semibold">Skills by area</h2>
+          <p className="mt-1.5 text-xs leading-5 text-[#7f8ca1]">From your profile and analyzed resumes.</p>
+          {groupedSkills.length ? <div className="mt-4 grid grid-cols-2 gap-2">{groupedSkills.map(({ group, skills }) => <article key={group} className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5"><h3 className="text-xs font-semibold">{group}</h3><ul className="mt-2 space-y-1.5">{skills.map((skill) => <li key={`${skill.category}-${skill.name}`} className="break-words rounded-md bg-white/[0.04] px-2 py-1 text-xs text-[#c0cad8]">{skill.name}</li>)}</ul></article>)}</div> : <p className="mt-4 rounded-xl border border-white/[0.06] p-3 text-xs leading-5 text-[#8794a9]">No skills saved yet. Add skills in your <Link href="/onboarding" className="text-[#72e5db] hover:text-white">career profile</Link> or analyze a resume.</p>}
           {result && <div className="mt-6 border-t border-white/[0.07] pt-5"><div className="flex items-center justify-between"><h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8997ac]">Role skill coverage</h3><span className="text-xs font-semibold text-[#72e5db]">{progress}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-[#59dfd3] transition-[width]" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-[9px] text-[#7f8ca1]">{result.matchedSkills.length} of {result.requiredSkills.length} typical skills currently matched</p></div>}
         </section>
 
