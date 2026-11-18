@@ -64,12 +64,21 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     if (!isStorageProviderName(resume.storageProvider)) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
 
     if (resume.storageProvider !== "database") {
-      const storage = getStorageProvider(resume.storageProvider);
-      if (!storage) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
-      await storage.delete(resume.storageKey);
+      try {
+        const storage = getStorageProvider(resume.storageProvider);
+        if (storage) await storage.delete(resume.storageKey);
+      } catch (error) {
+        // Older resumes may point to temporary or no-longer-configured storage.
+        // Remove the account record so it does not block the user's resume library.
+        console.error("Legacy resume file cleanup failed; removing the resume record", {
+          provider: resume.storageProvider,
+          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorCode: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
+        });
+      }
     }
     await prisma.$transaction(async (tx) => {
-      await tx.resume.delete({ where: { id: resume.id } });
+      await tx.resume.delete({ where: { id: resume.id }, select: { id: true } });
       if (resume.isActive) {
         const replacement = await tx.resume.findFirst({
           where: { userId: resume.userId },

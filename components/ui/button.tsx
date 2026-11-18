@@ -5,9 +5,9 @@ type ButtonVariant = "primary" | "secondary" | "quiet";
 
 const styles: Record<ButtonVariant, string> = {
   primary:
-    "border border-[#67eee0] bg-[#54e3d5] text-[#071312] shadow-[0_8px_30px_rgba(67,218,206,.12)] hover:bg-[#78f1e4]",
+    "linkedin-primary border border-[#0a66c2] bg-[#0a66c2] text-white shadow-sm hover:bg-[#004182]",
   secondary:
-    "border border-white/10 bg-white/[0.035] text-[#e9eef7] hover:border-white/20 hover:bg-white/[0.07]",
+    "linkedin-secondary border border-[#bfc5ca] bg-white text-[#0a66c2] hover:border-[#0a66c2] hover:bg-[#f7fbff]",
   quiet: "border border-transparent text-[#aab4c6] hover:bg-white/[0.06] hover:text-white",
 };
 

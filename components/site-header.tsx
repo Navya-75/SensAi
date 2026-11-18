@@ -28,7 +28,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[13px] text-[#98a3b6] transition-colors hover:text-white"
+              className="text-base font-medium text-[#56616b] transition-colors hover:text-[#0a66c2]"
             >
               {link.label}
             </Link>
@@ -39,16 +39,16 @@ export function SiteHeader() {
           <SignedOut>
             <Link
               href="/sign-in"
-              className="text-[13px] font-medium text-[#bac3d1] transition-colors hover:text-white"
+              className="text-base font-medium text-[#56616b] transition-colors hover:text-[#0a66c2]"
             >
               Sign in
             </Link>
-            <ButtonLink href="/sign-up" className="min-h-10 rounded-[10px] px-3.5 text-[12px]">
+            <ButtonLink href="/sign-up" className="min-h-11 rounded-full px-4 text-sm">
               Get started <ArrowUpRight size={15} aria-hidden="true" />
             </ButtonLink>
           </SignedOut>
           <SignedIn>
-            <Link href="/dashboard" className="text-[13px] font-medium text-[#bac3d1] transition-colors hover:text-white">
+            <Link href="/dashboard" className="text-base font-medium text-[#56616b] transition-colors hover:text-[#0a66c2]">
               Dashboard
             </Link>
             <UserButton />

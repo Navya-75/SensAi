@@ -7,7 +7,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <Sparkles size={16} strokeWidth={1.8} aria-hidden="true" />
       </span>
       {!compact && (
-        <span className="text-[15px] font-bold tracking-[0.18em] text-[#f1f5fb]">
+        <span className="text-lg font-bold tracking-[0.18em] text-[#f1f5fb]">
           SENSAI
         </span>
       )}

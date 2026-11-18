@@ -13,7 +13,7 @@
 
 1. Add secrets and service URLs in the host's protected environment configuration.
 2. Run `npm ci`, `npm run db:generate`, and `npm run db:validate` during the build pipeline.
-3. Apply committed database changes with `npm run db:deploy` as a release step before serving the new version.
+3. Render builds run `npm run db:deploy` automatically before `next build` through the `prebuild` script. Keep `DATABASE_URL` and `DIRECT_URL` available in the Render environment during the build.
 4. Build with `npm run build` and serve with `npm start`.
 5. Verify authentication, resume upload/download/delete, consent settings, one Gemini request per enabled feature, job filtering, practice attempt persistence, and account ownership boundaries.
 6. Check `https://<origin>/robots.txt` and `/sitemap.xml`; only the public home page is listed.
@@ -28,7 +28,7 @@ In the Render web service's Environment settings, set:
 - `DATABASE_URL` to the hosted PostgreSQL URL used by the running app
 - `DIRECT_URL` to the direct PostgreSQL URL used to apply Prisma migrations
 
-The migration adds a nullable `BYTEA` column to `Resume`; apply it before deploying the version that reads and writes PDF bytes. Set Render's build command to `npm ci && npm run db:generate && npm run db:deploy && npm run build`, or run `npm run db:deploy` as a release step before the app starts. Uploaded PDFs are limited to 4 MB and count toward the PostgreSQL plan's storage quota.
+The migration adds a nullable `BYTEA` column to `Resume`. The automatic Render prebuild migration applies it before the app build, so the existing Render build command can remain unchanged. Uploaded PDFs are limited to 4 MB and count toward the PostgreSQL plan's storage quota.
 
 ## Voice support
 

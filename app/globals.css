@@ -268,3 +268,34 @@ body.linkedin-theme button:disabled {
   color: #6b747c !important;
   opacity: 1 !important;
 }
+
+body.linkedin-theme .linkedin-primary {
+  background-color: #0a66c2 !important;
+  border-color: #0a66c2 !important;
+  color: #ffffff !important;
+}
+
+body.linkedin-theme .linkedin-primary:hover {
+  background-color: #004182 !important;
+  border-color: #004182 !important;
+  color: #ffffff !important;
+}
+
+body.linkedin-theme .linkedin-secondary {
+  background-color: #ffffff !important;
+  border-color: #bfc5ca !important;
+  color: #0a66c2 !important;
+}
+
+body.linkedin-theme .linkedin-secondary:hover {
+  background-color: #f7fbff !important;
+  border-color: #0a66c2 !important;
+  color: #0a66c2 !important;
+}
+
+body.linkedin-theme main h1[class*="text-[#"],
+body.linkedin-theme main h2[class*="text-[#"],
+body.linkedin-theme main h3[class*="text-[#"],
+body.linkedin-theme main h4[class*="text-[#"] {
+  color: #191919 !important;
+}

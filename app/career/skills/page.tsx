@@ -30,7 +30,7 @@ export default async function SkillGapPage() {
 
   return (
     <main className="min-h-screen bg-[#0b0e17] text-[#eef3f9]">
-      <header className="border-b border-white/[0.07]"><div className="mx-auto flex h-[68px] w-[min(100%-40px,1040px)] items-center justify-between"><Link href="/dashboard" className="text-sm font-bold tracking-[0.2em]">SENSAI</Link><nav className="flex gap-4 text-xs text-[#a4afc0]"><Link href="/resume/analyzer" className="hover:text-white">Resume analysis</Link><Link href="/career/roadmap" className="hover:text-white">Roadmap</Link></nav></div></header>
+      <header className="border-b border-white/[0.07]"><div className="mx-auto flex h-[76px] w-[min(100%-40px,1040px)] items-center justify-between"><Link href="/dashboard" className="text-lg font-bold tracking-[0.2em]">SENSAI</Link><nav className="flex gap-5 text-base font-medium text-[#56616b]"><Link href="/resume/analyzer" className="hover:text-[#0a66c2]">Resume analysis</Link><Link href="/career/roadmap" className="hover:text-[#0a66c2]">Roadmap</Link></nav></div></header>
       <section className="mx-auto w-[min(100%-40px,1040px)] py-11 sm:py-14">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6de3d7]">Career planning</p>
         <h1 className="mt-3 text-3xl font-medium tracking-[-0.05em]">Skill gap analysis</h1>
