@@ -14,6 +14,8 @@ export async function GET(request: Request) {
     if (synced.status !== "synced") return NextResponse.json({ error: "Practice storage is not configured." }, { status: 503 });
     const searchParams = new URL(request.url).searchParams;
     const topic = searchParams.get("topic")?.slice(0, 60);
+    const requestedDifficulty = searchParams.get("difficulty");
+    const difficulty = requestedDifficulty === "INTERMEDIATE" || requestedDifficulty === "ADVANCED" ? requestedDifficulty : "BEGINNER";
     const replay = searchParams.get("replay") === "1";
     const excludedIds = new Set((searchParams.get("exclude") ?? "")
       .split(",")
@@ -21,9 +23,9 @@ export async function GET(request: Request) {
       .map((id) => id.trim())
       .filter((id) => id.length > 0 && id.length <= 64));
     const [topics, attempts, questions] = await Promise.all([
-      prisma.mcq.findMany({ where: { isDemo: true }, distinct: ["topic"], select: { topic: true }, orderBy: { topic: "asc" } }),
+      prisma.mcq.findMany({ where: { isDemo: true, difficulty }, distinct: ["topic"], select: { topic: true }, orderBy: { topic: "asc" } }),
       prisma.mcqAttempt.findMany({ where: { userId: synced.user.id }, select: { mcqId: true, isCorrect: true } }),
-      prisma.mcq.findMany({ where: { isDemo: true, ...(topic ? { topic } : {}) }, select: { id: true, topic: true, question: true, options: true, difficulty: true }, orderBy: [{ topic: "asc" }, { createdAt: "asc" }], take: 100 }),
+      prisma.mcq.findMany({ where: { isDemo: true, difficulty, ...(topic ? { topic } : {}) }, select: { id: true, topic: true, question: true, options: true, difficulty: true }, orderBy: [{ topic: "asc" }, { createdAt: "asc" }], take: 100 }),
     ]);
     const answered = new Set(attempts.map((attempt) => attempt.mcqId));
     const question = questions.find((candidate) => (replay || !answered.has(candidate.id)) && !excludedIds.has(candidate.id)) ?? null;

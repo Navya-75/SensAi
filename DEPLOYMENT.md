@@ -13,12 +13,12 @@
 
 1. Add secrets and service URLs in the host's protected environment configuration.
 2. Run `npm ci`, `npm run db:generate`, and `npm run db:validate` during the build pipeline.
-3. Render builds run `npm run db:deploy` automatically before `next build` through the `prebuild` script. Keep `DATABASE_URL` and `DIRECT_URL` available in the Render environment during the build.
+3. Render builds apply Prisma migrations and then add/update the demo-only MCQ practice bank before `next build` through the `prebuild` script. Keep `DATABASE_URL` and `DIRECT_URL` available in the Render environment during the build.
 4. Build with `npm run build` and serve with `npm start`.
 5. Verify authentication, resume upload/download/delete, consent settings, one Gemini request per enabled feature, job filtering, practice attempt persistence, and account ownership boundaries.
 6. Check `https://<origin>/robots.txt` and `/sitemap.xml`; only the public home page is listed.
 
-Do not run `npm run db:seed` against production unless demo content is intentionally wanted. Seeded job entries are fictional examples.
+Render's prebuild seeds only the explicitly labeled MCQ practice questions. The full `npm run db:seed` also adds fictional job listings and should not be run against production unless you want those demo jobs.
 
 ### Render configuration for PostgreSQL resume storage
 

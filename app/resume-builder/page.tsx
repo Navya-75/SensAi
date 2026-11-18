@@ -6,6 +6,7 @@ import { syncSignedInUser } from "@/lib/auth/sync-user";
 import { prisma } from "@/lib/db/prisma";
 import { emptyResumeSections, resumeSectionsSchema, resumeTemplateKeys, type ResumeBuilderData, type ResumeTemplateKey } from "@/lib/validation/resume-builder";
 import { resumeAnalysisSchema } from "@/lib/ai/schemas/resume-analysis";
+import { groupResumeSkills } from "@/lib/skills/resume-groups";
 
 function entry(id: string, title: string, subtitle = "", details = "") {
   return { id, title, subtitle, details };
@@ -21,7 +22,7 @@ export default async function ResumeBuilderPage() {
     if (sync.status === "synced") {
       const [saved, user, latest] = await Promise.all([
         prisma.resumeBuilderDocument.findUnique({ where: { userId: sync.user.id }, select: { title: true, templateKey: true, sections: true } }),
-        prisma.user.findUnique({ where: { id: sync.user.id }, select: { fullName: true, email: true, phone: true, onboardingProfile: { select: { education: true, degree: true, branch: true, graduationYear: true } }, skills: { select: { skill: { select: { name: true } } } } } }),
+        prisma.user.findUnique({ where: { id: sync.user.id }, select: { fullName: true, email: true, phone: true, onboardingProfile: { select: { education: true, degree: true, branch: true, graduationYear: true } }, skills: { select: { skill: { select: { name: true, category: true } } } } } }),
         prisma.resumeAnalysis.findFirst({ where: { userId: sync.user.id }, orderBy: { createdAt: "desc" }, select: { result: true } }),
       ]);
       if (saved) {
@@ -38,6 +39,7 @@ export default async function ResumeBuilderPage() {
             ...emptyResumeSections,
             contact: { ...emptyResumeSections.contact, fullName: user.fullName ?? "", email: user.email ?? "", phone: user.phone ?? "" },
             skills: [...new Set(user.skills.map(({ skill }) => skill.name))],
+            skillGroups: groupResumeSkills(user.skills.map(({ skill }) => skill)),
             education: user.onboardingProfile?.degree || user.onboardingProfile?.education ? [entry("profile-education", [user.onboardingProfile.degree, user.onboardingProfile.branch].filter(Boolean).join(" · "), user.onboardingProfile.education ?? "", user.onboardingProfile.graduationYear ? String(user.onboardingProfile.graduationYear) : "")] : [],
             experience: source?.experience.flatMap((item, index) => item.evidence ? [entry(`resume-experience-${index}`, item.title ?? "", [item.organization, item.dates].filter(Boolean).join(" · "), item.evidence)] : []) ?? [],
             projects: source?.projects.flatMap((item, index) => item.evidence ? [entry(`resume-project-${index}`, item.name ?? "Project", item.skills.join(" · "), item.evidence)] : []) ?? [],

@@ -15,9 +15,17 @@ if (!existsSync(prismaCli)) {
   process.exit(1);
 }
 
-const result = spawnSync(process.execPath, [prismaCli, "migrate", "deploy"], { stdio: "inherit" });
-if (result.error) {
+const migration = spawnSync(process.execPath, [prismaCli, "migrate", "deploy"], { stdio: "inherit" });
+if (migration.error) {
   console.error("Could not start the PostgreSQL migration.");
   process.exit(1);
 }
-process.exit(result.status ?? 1);
+if (migration.status !== 0) process.exit(migration.status ?? 1);
+
+const mcqSeed = resolve(process.cwd(), "prisma", "seed.mjs");
+const seed = spawnSync(process.execPath, [mcqSeed, "--mcq-only"], { stdio: "inherit" });
+if (seed.error) {
+  console.error("Could not update the sample MCQ practice bank.");
+  process.exit(1);
+}
+process.exit(seed.status ?? 1);

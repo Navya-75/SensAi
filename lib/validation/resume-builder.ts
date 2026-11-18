@@ -7,6 +7,13 @@ const entrySchema = z.object({
   details: z.string().trim().max(3000),
 }).strict();
 
+const resumeSkillGroupsSchema = z.object({
+  frontend: z.array(z.string().trim().min(1).max(100)).max(60),
+  backend: z.array(z.string().trim().min(1).max(100)).max(60),
+  core: z.array(z.string().trim().min(1).max(100)).max(60),
+  programming: z.array(z.string().trim().min(1).max(100)).max(60),
+}).strict();
+
 export const resumeSectionsSchema = z.object({
   contact: z.object({
     fullName: z.string().trim().max(120),
@@ -18,7 +25,8 @@ export const resumeSectionsSchema = z.object({
   }).strict(),
   summary: z.string().trim().max(1500),
   education: z.array(entrySchema).max(20),
-  skills: z.array(z.string().trim().min(1).max(100)).max(60),
+  skills: z.array(z.string().trim().min(1).max(100)).max(240),
+  skillGroups: resumeSkillGroupsSchema.optional(),
   experience: z.array(entrySchema).max(30),
   projects: z.array(entrySchema).max(30),
   certifications: z.array(entrySchema).max(30),
@@ -42,6 +50,7 @@ export const emptyResumeSections: ResumeSections = {
   summary: "",
   education: [],
   skills: [],
+  skillGroups: { frontend: [], backend: [], core: [], programming: [] },
   experience: [],
   projects: [],
   certifications: [],
