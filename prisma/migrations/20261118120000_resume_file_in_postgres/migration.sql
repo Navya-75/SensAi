@@ -1,0 +1,2 @@
+ALTER TABLE "Resume"
+ADD COLUMN "fileData" BYTEA;

@@ -26,7 +26,19 @@ export async function GET(_request: Request, { params }: RouteContext) {
     if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
     if (!isStorageProviderName(resume.storageProvider)) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
 
-    const file = await getStorageProvider(resume.storageProvider).get(resume.storageKey);
+    let file: Buffer;
+    if (resume.storageProvider === "database") {
+      const stored = await prisma.resume.findFirst({
+        where: { id: resume.id, userId: resume.userId },
+        select: { fileData: true },
+      });
+      if (!stored?.fileData) return NextResponse.json({ error: "The saved resume file is unavailable." }, { status: 404 });
+      file = Buffer.from(stored.fileData);
+    } else {
+      const storage = getStorageProvider(resume.storageProvider);
+      if (!storage) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
+      file = await storage.get(resume.storageKey);
+    }
     return new Response(new Uint8Array(file), {
       headers: {
         "Content-Type": "application/pdf",
@@ -51,7 +63,11 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
     if (!isStorageProviderName(resume.storageProvider)) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
 
-    await getStorageProvider(resume.storageProvider).delete(resume.storageKey);
+    if (resume.storageProvider !== "database") {
+      const storage = getStorageProvider(resume.storageProvider);
+      if (!storage) return NextResponse.json({ error: "Resume storage is unavailable." }, { status: 503 });
+      await storage.delete(resume.storageKey);
+    }
     await prisma.$transaction(async (tx) => {
       await tx.resume.delete({ where: { id: resume.id } });
       if (resume.isActive) {

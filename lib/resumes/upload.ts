@@ -64,22 +64,18 @@ export async function uploadResumeForUser({
 
   const storageKey = `${userId}/${randomUUID()}.pdf`;
   const contentHash = createHash("sha256").update(bytes).digest("hex");
-  try {
-    await storage.put(storageKey, bytes, "application/pdf");
-  } catch (error) {
-    console.error("Private resume storage write failed", {
-      provider: storage.name,
-      bucketConfigured: Boolean(process.env.S3_BUCKET),
-      regionConfigured: Boolean(process.env.S3_REGION),
-      endpointConfigured: Boolean(process.env.S3_ENDPOINT),
-      accessKeyConfigured: Boolean(process.env.S3_ACCESS_KEY_ID),
-      secretKeyConfigured: Boolean(process.env.S3_SECRET_ACCESS_KEY),
-      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-      errorName: error instanceof Error ? error.name : "UnknownError",
-      errorCode: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
-      errorMessage: error instanceof Error ? error.message.replace(/[A-Za-z]:\\[^:\r\n]*/g, "[path]").slice(0, 180) : undefined,
-    });
-    throw new ResumeUploadError("Private resume storage is unavailable. The site owner should check the R2 settings in Render and review the service logs.", 503);
+  if (storage) {
+    try {
+      await storage.put(storageKey, bytes, "application/pdf");
+    } catch (error) {
+      console.error("Private resume storage write failed", {
+        provider: storage.name,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorCode: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
+        errorMessage: error instanceof Error ? error.message.replace(/[A-Za-z]:\\[^:\r\n]*/g, "[path]").slice(0, 180) : undefined,
+      });
+      throw new ResumeUploadError("Private resume storage is unavailable. Check the storage service configuration and logs.", 503);
+    }
   }
 
   try {
@@ -91,8 +87,9 @@ export async function uploadResumeForUser({
           originalFilename: sanitizeFilename(filename),
           mimeType: "application/pdf",
           sizeBytes: bytes.byteLength,
-          storageProvider: storage.name,
+          storageProvider: storage?.name ?? "database",
           storageKey,
+          fileData: storage ? undefined : Buffer.from(bytes),
           contentHash,
           extractedText: extracted.text,
           status: "UPLOADED",
@@ -120,8 +117,13 @@ export async function uploadResumeForUser({
 
       return { ...resume, pageCount: extracted.pageCount };
     });
-  } catch {
-    await storage.delete(storageKey).catch(() => undefined);
-    throw new ResumeUploadError("SENSAI could not save the resume record. Please try again.", 503);
+  } catch (error) {
+    if (storage) await storage.delete(storageKey).catch(() => undefined);
+    console.error("Resume record and PDF could not be saved", {
+      provider: storage?.name ?? "database",
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorCode: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
+    });
+    throw new ResumeUploadError("SENSAI could not save the resume and PDF in PostgreSQL. Check the database connection and apply pending migrations.", 503);
   }
 }

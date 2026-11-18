@@ -6,32 +6,29 @@
 - Clerk production application keys and allowed origin/redirect URLs.
 - PostgreSQL with a pooled application URL in `DATABASE_URL` and a direct migration URL in `DIRECT_URL`.
 - A server-side `GEMINI_API_KEY` for model features. `GEMINI_MODEL` is optional.
-- Private S3-compatible object storage for uploaded resumes (`STORAGE_PROVIDER=s3`, bucket, region, and credentials). Do not use local file storage on ephemeral production hosts.
+- PostgreSQL-backed private resume storage (`STORAGE_PROVIDER=database`). Resume PDFs are stored in the same PostgreSQL database as their private account records; no separate object-storage account is required.
 - `NEXT_PUBLIC_APP_URL` set to the canonical HTTPS origin.
 
 ## Release steps
 
 1. Add secrets and service URLs in the host's protected environment configuration.
 2. Run `npm ci`, `npm run db:generate`, and `npm run db:validate` during the build pipeline.
-3. Apply committed database changes with `npm run db:deploy` as a release step.
+3. Apply committed database changes with `npm run db:deploy` as a release step before serving the new version.
 4. Build with `npm run build` and serve with `npm start`.
 5. Verify authentication, resume upload/download/delete, consent settings, one Gemini request per enabled feature, job filtering, practice attempt persistence, and account ownership boundaries.
 6. Check `https://<origin>/robots.txt` and `/sitemap.xml`; only the public home page is listed.
 
 Do not run `npm run db:seed` against production unless demo content is intentionally wanted. Seeded job entries are fictional examples.
 
-### Cloudflare R2 on Render (no AWS account required)
+### Render configuration for PostgreSQL resume storage
 
-R2 uses the same S3-compatible API as the existing storage adapter. In the Render web service's Environment settings, configure:
+In the Render web service's Environment settings, set:
 
-- `STORAGE_PROVIDER=s3`
-- `S3_BUCKET` to the exact R2 bucket name
-- `S3_REGION=auto`
-- `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`
-- `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` from an R2 token scoped to that bucket with Object Read & Write access
-- `S3_FORCE_PATH_STYLE=false`
+- `STORAGE_PROVIDER=database`
+- `DATABASE_URL` to the hosted PostgreSQL URL used by the running app
+- `DIRECT_URL` to the direct PostgreSQL URL used to apply Prisma migrations
 
-Keep the bucket private. After changing these values, use Render's **Save and deploy** option. If a write fails, Render logs include `Private resume storage write failed` and safe presence flags for the required settings; they never include the secret key value.
+The migration adds a nullable `BYTEA` column to `Resume`; apply it before deploying the version that reads and writes PDF bytes. Set Render's build command to `npm ci && npm run db:generate && npm run db:deploy && npm run build`, or run `npm run db:deploy` as a release step before the app starts. Uploaded PDFs are limited to 4 MB and count toward the PostgreSQL plan's storage quota.
 
 ## Voice support
 

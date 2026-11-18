@@ -1,4 +1,4 @@
-export type FileStorageProviderName = "local" | "s3";
+export type FileStorageProviderName = "database" | "local" | "s3";
 
 export interface FileStorageProvider {
   readonly name: FileStorageProviderName;

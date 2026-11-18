@@ -262,6 +262,7 @@ model Resume {
   sizeBytes        Int
   storageProvider  String
   storageKey       String
+  fileData         Bytes?
   contentHash      String?
   extractedText    String?      @db.Text
   status           ResumeStatus @default(UPLOADED)
