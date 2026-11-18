@@ -4,7 +4,7 @@ import { s3StorageProvider } from "@/lib/storage/s3";
 import { StorageConfigurationError, type FileStorageProvider, type FileStorageProviderName } from "@/lib/storage/types";
 
 export function getStorageProvider(name?: string): FileStorageProvider | null {
-  const selected = (name ?? (process.env.NODE_ENV === "production" ? "database" : process.env.STORAGE_PROVIDER ?? "local")) as string;
+  const selected = (name ?? process.env.STORAGE_PROVIDER ?? "database") as string;
 
   if (selected === "database") return null;
 
